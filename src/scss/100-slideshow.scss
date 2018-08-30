@@ -1,10 +1,7 @@
-$foreground: #fff !default;
-$background: #2b242b !default;
-$transition: 200ms !default;
-
-@import "fonts";
-@import "general";
-@import "slides";
+@import "variables";
+@import "main";
+@import "classes";
+@import "components/blockquote";
 
 @media print {
     @import "print";

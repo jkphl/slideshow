@@ -11,6 +11,8 @@ const matter = require('gray-matter');
 const marked = require('marked');
 const sass = require('node-sass');
 const UglifyJS = require('uglify-js');
+const postcss = require('postcss');
+const autoprefixer = require('autoprefixer');
 
 const fileProperties = ['history', 'stat', '_contents'];
 
@@ -107,7 +109,10 @@ function makeUrlList(val) {
 function sortVinylResources(a, b) {
     const an = path.basename(a.path);
     const bn = path.basename(b.path);
-    return (an === bn) ? 0 : ((an > bn) ? 1 : -1);
+    if (an === bn) {
+        return 0;
+    }
+    return (an > bn) ? 1 : -1;
 }
 
 /**
@@ -157,18 +162,16 @@ class Slideshow {
         data.slides = [];
 
         // Read the main template
-        fs.readFile(path.join(__dirname, 'src/tmpl/slideshow.hbs'), 'utf-8', (error, source) => {
-            if (error) {
-                cb(error);
+        fs.readFile(path.join(__dirname, 'src/tmpl/slideshow.hbs'), 'utf-8', (error1, source) => {
+            if (error1) {
+                cb(error1);
                 return;
             }
 
             // Prepare JavaScript resources
             this.jsFiles.push(vinylFile.readSync(path.join(__dirname, 'src/js/100-slideshow.js')));
-            data.js = UglifyJS.minify(
-                this.jsFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, ''),
-                { compress: false, mangle: false },
-            ).code;
+            const js = this.jsFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
+            data.js = UglifyJS.minify(js, { compress: false, mangle: false }).code;
 
             // Prepare SCSS resources
             this.cssFiles.push(vinylFile.readSync(path.join(__dirname, 'src/scss/100-slideshow.scss')));
@@ -178,25 +181,47 @@ class Slideshow {
                 includePaths: [path.join(__dirname, 'src/scss')],
                 outputStyle: 'compressed',
             },
-            function (error, result) {
-                if (error) {
-                    cb(error);
+            (error2, result1) => {
+                if (error2) {
+                    cb(error2);
                     return;
                 }
-                data.css = result.css;
+                postcss([autoprefixer]).process(result1.css, { from: 'undefined' }).then((result2) => {
+                    result2.warnings().forEach((warn) => {
+                        console.warn(warn.toString());
+                    });
+                    data.css = result2.css;
 
-                // Prepare the slides
-                markdown.forEach((file, index) => {
-                    const slide = matter(file.contents);
-                    slide.data.id = slide.data.id || `slide-${index}`;
-                    slide.content = marked(slide.content);
-                    data.slides.push(slide);
+                    // Prepare the slides
+                    markdown.forEach((file, index) => {
+                        const slide = matter(file.contents);
+                        slide.data.id = slide.data.id || `slide-${index}`;
+                        slide.data.title = slide.data.title || slide.data.id;
+                        slide.data.isQuote = slide.data.type && (slide.data.type === 'quote');
+                        slide.data.quote = Object.assign({
+                            author: '',
+                            url: '',
+                            image: '',
+                        }, slide.data.quote || {});
+                        slide.data.align = slide.data.align || 'left';
+                        slide.data.valign = slide.data.valign || 'top';
+                        slide.data.gradient = ('gradient' in slide.data) ? !!slide.data.gradient : true;
+                        slide.data.css = slide.data.css || '';
+                        slide.data.steps = parseInt(slide.data.steps || '0', 0);
+                        slide.data.theme = slide.data.theme || '';
+                        const parts = slide.content.split('---\n');
+                        slide.content = marked(parts.shift());
+                        if (parts.length) {
+                            slide.footer = marked(parts.shift());
+                        }
+                        data.slides.push(slide);
+                    });
+
+                    // Templating
+                    const template = handlebars.compile(source);
+                    const html = template(data);
+                    cb(null, html);
                 });
-
-                // Templating
-                const template = handlebars.compile(source);
-                const html = template(data);
-                cb(null, html);
             });
         });
     }

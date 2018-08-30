@@ -10,9 +10,57 @@
         {{#if slides}}
             <ol class="slides">
                 {{#each slides}}
-                    <li id="{{this.data.id}}">{{{this.content}}}</li>
+                    <li id="{{this.data.id}}" class="{{{this.data.align}}} {{{this.data.valign}}}{{#if
+                        this.data.gradient}}{{else}} no-gradient{{/if}} {{this.data.css}}"{{#if this.data.steps}}
+                        data-steps="{{this.data.steps}}"{{/if}}{{#if this.data.theme}}
+                        data-theme="{{this.data.theme}}"{{/if}} data-title="{{this.data.title}}">
+                        {{#if this.data.isQuote}}
+                            {{#if this.data.quote.image}}
+                                <figure class="blockquote">
+                                    <img src="{{this.data.quote.image}}"
+                                         alt="{{this.data.quote.author}}"/>
+                                    <figcaption>
+                                        <blockquote>
+                                            {{{this.content}}}
+                                            {{#if this.data.quote.author}}
+                                                <p class="author">
+                                                    {{#if this.data.quote.url}}
+                                                        <a href="{{this.data.quote.url}}"
+                                                           rel="nofollow noopener" target="_blank">{{this.data.quote.author}}</a>
+                                                    {{else}}
+                                                        {{this.data.quote.author}}
+                                                    {{/if}}
+                                                </p>
+                                            {{/if}}
+                                        </blockquote>
+                                    </figcaption>
+                                </figure>
+                            {{else}}
+                                <blockquote>
+                                    {{{this.content}}}
+                                    {{#if this.data.quote.author}}
+                                        <p class="author">
+                                            {{#if this.data.quote.url}}
+                                                <a href="{{this.data.quote.url}}"
+                                                   rel="nofollow noopener" target="_blank">{{this.data.quote.author}}</a>
+                                            {{else}}
+                                                {{this.data.quote.author}}
+                                            {{/if}}
+                                        </p>
+                                    {{/if}}
+                                </blockquote>
+                            {{/if}}
+                        {{else}}
+                            <section>
+                                {{{this.content}}}
+                                {{#if this.footer}}
+                                    <footer>{{{this.footer}}}</footer>
+                                {{/if}}
+                            </section>
+                        {{/if}}
+                    </li>
                 {{/each}}
-            </ul>
+            </ol>
         {{/if}}
         <script>{{{js}}}</script>
     </body>
