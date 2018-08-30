@@ -1,0 +1,11 @@
+$foreground: #fff !default;
+$background: #2b242b !default;
+$transition: 200ms !default;
+
+@import "fonts";
+@import "general";
+@import "slides";
+
+@media print {
+    @import "print";
+}

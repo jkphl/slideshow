@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="{{language}}">
+    <head>
+        <meta charset="{{charset}}">
+        <title>{{title}}</title>
+        <meta name="description" content="{{description}}">
+        <style>{{{css}}}</style>
+    </head>
+    <body class="h-entry">
+        {{#if slides}}
+            <ol class="slides">
+                {{#each slides}}
+                    <li id="{{this.data.id}}">{{{this.content}}}</li>
+                {{/each}}
+            </ul>
+        {{/if}}
+        <script>{{{js}}}</script>
+    </body>
+</html>

@@ -2,7 +2,15 @@
 
 const through = require('through2');
 const Vinyl = require('vinyl');
+const vinylFile = require('vinyl-file');
 const isUrl = require('is-url');
+const handlebars = require('handlebars');
+const fs = require('fs');
+const path = require('path');
+const matter = require('gray-matter');
+const marked = require('marked');
+const sass = require('node-sass');
+const UglifyJS = require('uglify-js');
 
 const fileProperties = ['history', 'stat', '_contents'];
 
@@ -85,6 +93,24 @@ function makeUrlList(val) {
 }
 
 /**
+ *
+ *
+ * @returns {number} Sort order
+ */
+/**
+ * Sort Vinyl resources by file name
+ *
+ * @param {Vinyl} a Vinyl file
+ * @param {Vinyl} b Vinyl file
+ * @returns {number} Sort order
+ */
+function sortVinylResources(a, b) {
+    const an = path.basename(a.path);
+    const bn = path.basename(b.path);
+    return (an === bn) ? 0 : ((an > bn) ? 1 : -1);
+}
+
+/**
  * Slideshow class
  */
 class Slideshow {
@@ -96,11 +122,19 @@ class Slideshow {
     /**
      * Slideshow constructor
      *
+     * @param {Object} config Main configuration
      * @param {File|Array.<File>|Object.<String, File>} markdown Markdown slides
      * @param {File|Array.<File>|Object.<String, File>} css Custom CSS resources
      * @param {File|Array.<File>|Object.<String, File>} js Custom JavaScript resources
      */
-    constructor(markdown, css, js) {
+    constructor(config, markdown, css, js) {
+        this.config = {
+            title: config.title || 'Slideshow title',
+            author: config.author || 'Author',
+            description: config.description || 'Slideshow description',
+            language: config.language || 'en',
+            charset: config.charset || 'UTF-8',
+        };
         this.markdownFiles = makeVinylFileList(markdown);
         this.jsFiles = makeVinylFileList(js);
         this.jsUrls = makeUrlList(js);
@@ -110,17 +144,61 @@ class Slideshow {
 
     /**
      * Compile the slideshow
-     *
-     * @returns {String} Slideshow HTML
      */
-    compile() {
+    compile(cb) {
         // If there are no slides: Return
         if (!this.markdownFiles.length) {
-            return null;
+            cb();
+            return;
         }
 
+        const markdown = this.markdownFiles;
+        const data = Object.assign({}, this.config);
+        data.slides = [];
 
-        return 'slideshow HTML';
+        // Read the main template
+        fs.readFile(path.join(__dirname, 'src/tmpl/slideshow.hbs'), 'utf-8', (error, source) => {
+            if (error) {
+                cb(error);
+                return;
+            }
+
+            // Prepare JavaScript resources
+            this.jsFiles.push(vinylFile.readSync(path.join(__dirname, 'src/js/100-slideshow.js')));
+            data.js = UglifyJS.minify(
+                this.jsFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, ''),
+                { compress: false, mangle: false },
+            ).code;
+
+            // Prepare SCSS resources
+            this.cssFiles.push(vinylFile.readSync(path.join(__dirname, 'src/scss/100-slideshow.scss')));
+            sass.render({
+                data: this.cssFiles.sort(sortVinylResources)
+                    .reduce((a, c) => `${a}${c.contents.toString()}`, ''),
+                includePaths: [path.join(__dirname, 'src/scss')],
+                outputStyle: 'compressed',
+            },
+            function (error, result) {
+                if (error) {
+                    cb(error);
+                    return;
+                }
+                data.css = result.css;
+
+                // Prepare the slides
+                markdown.forEach((file, index) => {
+                    const slide = matter(file.contents);
+                    slide.data.id = slide.data.id || `slide-${index}`;
+                    slide.content = marked(slide.content);
+                    data.slides.push(slide);
+                });
+
+                // Templating
+                const template = handlebars.compile(source);
+                const html = template(data);
+                cb(null, html);
+            });
+        });
     }
 }
 
@@ -198,16 +276,23 @@ Slideshow.stream = function stream(config) {
      * @param {Function} cb Callback
      */
     function endStream(cb) {
-        const slides = (new Slideshow(markdown, css, js)).compile();
-        if (slides !== null) {
-            this.push(new Vinyl({
-                contents: Buffer.from(slides),
-            }));
-        }
-
         other.forEach(file => this.push(file));
 
-        cb();
+        (new Slideshow(options, markdown, css, js)).compile((error, slides) => {
+            if (error || !slides) {
+                cb(error);
+                return;
+            }
+
+            // console.log(slides);
+
+            this.push(new Vinyl({
+                contents: Buffer.from(slides),
+                path: 'slideshow.html',
+            }));
+
+            cb();
+        });
     }
 
     return through.obj(bufferContents, endStream);

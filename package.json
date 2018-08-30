@@ -8,8 +8,8 @@
   },
   "scripts": {
     "test": "mocha test/*.js",
-    "testlint": "eslint **/*.js && istanbul test _mocha --report html -- test/*.js --reporter spec",
-    "lint": "eslint --fix **/*.js"
+    "testlint": "eslint index.js test/main.js && istanbul test _mocha --report html -- test/*.js --reporter spec",
+    "lint": "eslint --fix index.js test/main.js"
   },
   "repository": {
     "type": "git",
@@ -40,10 +40,14 @@
     "stream-assert": "^2.0.3"
   },
   "dependencies": {
+    "gray-matter": "^4.0.1",
+    "handlebars": "^4.0.11",
     "is-url": "^1.2.4",
-    "remark": "^9.0.0",
-    "remark-frontmatter": "^1.2.1",
+    "marked": "^0.5.0",
+    "node-sass": "^4.9.3",
     "through2": "^2.0.3",
-    "vinyl": "^2.2.0"
+    "uglify-js": "^3.4.8",
+    "vinyl": "^2.2.0",
+    "vinyl-file": "^3.0.0"
   }
 }

@@ -1,6 +1,6 @@
-+++
-title = "Slide 3"
-+++
+---
+title: "Slide 3"
+---
  
 # Third slide
 

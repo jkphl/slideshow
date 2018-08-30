@@ -1,6 +1,7 @@
-+++
-title = "Slide 1"
-+++
+---
+title: "Slide 1"
+id: "intro"
+---
  
 # First slide
 
