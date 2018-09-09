@@ -11,6 +11,57 @@
     var interactive = false;
     var miniatures = false;
     var body;
+    var listTypes = ['ul', 'ol', 'dl'];
+
+    /**
+     * Test whether an element is nested inside a list
+     *
+     * @param {Element} el Element
+     * @param {Element} root Root element
+     * @returns {boolean} Is nested inside a list
+     */
+    function hasListAncestor(el, root) {
+        while (el.parentNode && (el.parentNode !== root)) {
+            if (listTypes.indexOf(el.parentNode.tagName.toLowerCase()) >= 0) {
+                return true;
+            }
+            el = el.parentNode;
+        }
+        return false;
+    }
+
+    /**
+     * Prepare an interactive element
+     *
+     * @param {Element} interactive Interactive element
+     * @param {Number} offset Interactives offset
+     * @returns {number} Number of iteractive items
+     */
+    function prepareInteractive(interactive, offset) {
+        var isDefinitionList = interactive.tagName.toLowerCase() === 'dl';
+        var interactives = 0;
+        for (var c = 0, child; c < interactive.childNodes.length; ++c) {
+            child = interactive.childNodes[c];
+            if ((child.nodeName.toLowerCase() == (isDefinitionList ? 'dt' : 'li')) && !child.classList.contains('static')) {
+                var interactiveClass = 'interactive-' + (offset + interactives++);
+                child.classList.add('interactive');
+                child.classList.add(interactiveClass);
+                if (isDefinitionList) {
+                    while (child.nextSibling) {
+                        if (child.nextSibling.nodeType === 1) {
+                            if (child.nextSibling.tagName.toLowerCase() !== 'dd') {
+                                break;
+                            }
+                            child.nextSibling.classList.add('interactive');
+                            child.nextSibling.classList.add(interactiveClass);
+                        }
+                        child = child.nextSibling;
+                    }
+                }
+            }
+        }
+        return interactives;
+    }
 
     // Reverse z-index stack so that first slide is on top
     for (var s = 0; s < slides.length; ++s) {
@@ -18,6 +69,18 @@
         slides[s].setAttribute('data-slide-index', s);
         if (s > 0) {
             slides[s].style.display = 'none';
+        }
+        var interactives = 0;
+        var lists = slides[s].querySelectorAll('ul, dl');
+        for (var l = 0; l < lists.length; ++l) {
+            if (lists[l].classList.contains('static') || hasListAncestor(lists[l], slides[s])) {
+                continue;
+            }
+            interactives += prepareInteractive(lists[l], interactives);
+        }
+        if (interactives) {
+            slides[s].classList.add('has-interactives');
+            slides[s].setAttribute('data-interactives', interactives);
         }
     }
 
@@ -81,7 +144,7 @@
         var steps = next.getAttribute('data-steps');
         if (steps && steps.length) {
             currentSteps = steps.split(' ');
-        } else if (interactive && (list = next.querySelectorAll('ul:not(.static) > li').length)) {
+        } else if (interactive && (list = parseInt(next.getAttribute('data-interactives') || '0', 10))) {
             currentSteps = [];
             for (var s = 0; s <= list; ++s) {
                 currentSteps.push('step-' + s);
@@ -189,6 +252,7 @@
      */
     function toggleInteractive() {
         interactive = !interactive;
+        d.documentElement.classList[interactive ? 'add' : 'remove']('is-interactive');
         if (currentSteps.length && currentSteps[0].length) {
             slides[current].classList.remove(currentSteps[currentStep]);
         }

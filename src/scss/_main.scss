@@ -28,7 +28,7 @@ body {
     margin: 0;
 }
 
-h1, h2 {
+h1, h2, h3, h4, h5, h6 {
     max-width: 80vw;
     line-height: $headingLineheight;
     font-weight: normal;
@@ -206,7 +206,7 @@ ul {
             align-items: flex-end;
         }
 
-        /* Nested lists */
+        /*
         &.step-0 ul:not(.static) > li,
         &.step-1 ul:not(.static) > li,
         &.step-2 ul:not(.static) > li,
@@ -232,6 +232,7 @@ ul {
         &.step-9 ul:not(.static) > li:nth-of-type(1n+10) {
             opacity: 0;
         }
+        */
 
         li {
             line-height: 1.4;
@@ -257,6 +258,23 @@ ul {
         dd {
             padding-left: 1em;
             margin-bottom: .5em;
+        }
+
+        .interactive {
+            transition: opacity $transition ease-in-out;
+        }
+
+        .is-interactive &.step-0 .interactive,
+        .is-interactive &.step-1 .interactive:nth-of-type(1n+2),
+        .is-interactive &.step-2 .interactive:nth-of-type(1n+3),
+        .is-interactive &.step-3 .interactive:nth-of-type(1n+4),
+        .is-interactive &.step-4 .interactive:nth-of-type(1n+5),
+        .is-interactive &.step-5 .interactive:nth-of-type(1n+6),
+        .is-interactive &.step-6 .interactive:nth-of-type(1n+7),
+        .is-interactive &.step-7 .interactive:nth-of-type(1n+8),
+        .is-interactive &.step-8 .interactive:nth-of-type(1n+9),
+        .is-interactive &.step-9 .interactive:nth-of-type(1n+10) {
+            opacity: 0;
         }
     }
 }
