@@ -271,6 +271,9 @@
                 slides[s].onclick = null;
             }
             document.documentElement.classList.remove('miniatures');
+            if (interactive) {
+                document.documentElement.classList.add('is-interactive');
+            }
         } else {
             for (s = 0; s < slides.length; ++s) {
                 slides[s].onclick = (function (n) {
@@ -280,6 +283,7 @@
                     }
                 })(s);
             }
+            document.documentElement.classList.remove('is-interactive');
             document.documentElement.classList.add('miniatures');
         }
         miniatures = !miniatures;
