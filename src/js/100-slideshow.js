@@ -324,10 +324,10 @@
             case 27: // [esc]
                 toggleMiniatures();
                 return;
-            case 17: // [ctrl]
+            case 67: // [ctrl]
                 toggleMouse();
                 return;
-            case 16: // [shift]
+            case 73: // [shift]
                 toggleInteractive();
                 return;
             default:
