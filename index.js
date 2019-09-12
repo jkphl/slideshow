@@ -209,6 +209,8 @@ class Slideshow {
                         slide.data.css = slide.data.css || '';
                         slide.data.steps = parseInt(slide.data.steps || '0', 0);
                         slide.data.theme = slide.data.theme || '';
+                        slide.data.leave = slide.data.leave || '';
+                        slide.data.enter = slide.data.enter || '';
                         const parts = slide.content.split('---\n');
                         slide.content = marked(parts.shift());
                         if (parts.length) {

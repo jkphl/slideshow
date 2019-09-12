@@ -1,6 +1,7 @@
 (function (global, d) {
     'use strict';
 
+    global.SlideshowAction = {};
     var CYCLE = true;
     var slides = d.querySelectorAll('.slides > li');
     var current = 0;
@@ -42,7 +43,7 @@
         var interactives = 0;
         for (var c = 0, child; c < interactive.childNodes.length; ++c) {
             child = interactive.childNodes[c];
-            if ((child.nodeName.toLowerCase() == (isDefinitionList ? 'dt' : 'li')) && !child.classList.contains('static')) {
+            if ((child.nodeName.toLowerCase() === (isDefinitionList ? 'dt' : 'li')) && !child.classList.contains('static')) {
                 var interactiveClass = 'interactive-' + (offset + interactives++);
                 child.classList.add('interactive');
                 child.classList.add(interactiveClass);
@@ -69,6 +70,7 @@
         slides[s].setAttribute('data-slide-index', s);
         if (s > 0) {
             slides[s].style.display = 'none';
+            slides[s].setAttribute('aria-hidden', 'true');
         }
         var interactives = 0;
         var lists = slides[s].querySelectorAll('ul, dl');
@@ -97,12 +99,14 @@
             if (commands.length === 0) {
                 return callback(prev, next);
             }
-            var action = global.SlideshowAction[commands.shift()];
-            if (action) {
-                action(prev, next, next);
-            } else {
-                run();
+            var cmd = commands.shift();
+            if (cmd.length && (cmd in global.SlideshowAction)) {
+                var action = global.SlideshowAction[cmd];
+                if (action && ({}.toString.call(action) === '[object Function]')) {
+                    action(prev, next);
+                }
             }
+            return run();
         }());
     }
 
@@ -121,9 +125,13 @@
             return;
         }
         prev.classList.remove('active');
+        prev.setAttribute('aria-hidden', 'true');
         step(prev, 0);
         var commands = prev.getAttribute('data-onleave');
-        call(commands ? commands.split(',') : [], prev, next, callback);
+        commands = commands ? commands.split(' ') : [];
+        call(commands.filter(function (cmd) {
+            return cmd.length > 0
+        }), prev, next, callback);
     }
 
     /**
@@ -154,9 +162,13 @@
         }
         step(next, 0);
         var commands = next.getAttribute('data-onenter');
-        call(commands ? commands.split(',') : [], prev, next, shuffle);
+        commands = commands ? commands.split(' ') : [];
+        call(commands.filter(function (cmd) {
+            return cmd.length > 0
+        }), prev, next, shuffle);
         setTimeout(function () {
             next.classList.add('active');
+            next.removeAttribute('aria-hidden');
         }, 10);
     }
 
@@ -224,7 +236,7 @@
     }
 
     /**
-     * Swich the current slide index
+     * Switch the current slide index
      *
      * @param {Element} slide Current slide
      * @param {Number} step Future slide index

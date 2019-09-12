@@ -13,7 +13,9 @@
                     <li id="{{this.data.id}}" class="{{{this.data.align}}} {{{this.data.valign}}}{{#if
                         this.data.gradient}}{{else}} no-gradient{{/if}} {{this.data.css}}"{{#if this.data.steps}}
                         data-steps="{{this.data.steps}}"{{/if}}{{#if this.data.theme}}
-                        data-theme="{{this.data.theme}}"{{/if}} data-title="{{this.data.title}}">
+                        data-theme="{{this.data.theme}}"{{/if}}{{#if this.data.leave}}
+                        data-onleave="{{this.data.leave}}"{{/if}}{{#if this.data.enter}}
+                        data-onenter="{{this.data.enter}}"{{/if}} data-title="{{this.data.title}}">
                         {{#if this.data.isQuote}}
                             {{#if this.data.quote.image}}
                                 <figure class="blockquote">
