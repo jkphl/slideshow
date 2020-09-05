@@ -43,7 +43,7 @@
   "dependencies": {
     "autoprefixer": "^9.6.1",
     "gray-matter": "^4.0.2",
-    "handlebars": "^4.2.0",
+    "handlebars": "^4.5.3",
     "is-url": "^1.2.4",
     "marked": "^0.7.0",
     "node-sass": "^4.12.0",
