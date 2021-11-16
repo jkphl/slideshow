@@ -1,5 +1,3 @@
-'use strict';
-
 const through = require('through2');
 const Vinyl = require('vinyl');
 const vinylFile = require('vinyl-file');
@@ -31,7 +29,7 @@ function isVinylFile(file) {
     }
     const properties = new Set(Object.getOwnPropertyNames(file));
     if ((!properties.has('cwd') && !properties.has('_cwd'))
-        || fileProperties.filter(p => !properties.has(p)).length
+        || fileProperties.filter((p) => !properties.has(p)).length
     ) {
         return false;
     }
@@ -53,7 +51,7 @@ function makeList(val) {
 
     if (!Array.isArray(val)) {
         if ((typeof val === 'object') && (val.constructor === Object)) {
-            ret = Object.keys(val).map(key => val[key]);
+            ret = Object.keys(val).map((key) => val[key]);
         } else {
             ret = [val];
         }
@@ -69,7 +67,7 @@ function makeList(val) {
  * @return {Array} Value list
  */
 function makeVinylFileList(val) {
-    return makeList(val).filter(v => isVinylFile(v));
+    return makeList(val).filter((v) => isVinylFile(v));
 }
 
 /**
@@ -80,8 +78,12 @@ function makeVinylFileList(val) {
  */
 function makeRegexList(val) {
     return makeList(val)
-        .filter(v => ((typeof v === 'string' && v.trim().length) || (typeof v === 'object' && v.constructor === RegExp)))
-        .map(v => (typeof v === 'string' ? new RegExp(v) : v));
+        .filter((v) => {
+            const isString = typeof v === 'string' && v.trim().length;
+            const isRegex = typeof v === 'object' && v.constructor === RegExp;
+            return isString || isRegex;
+        })
+        .map((v) => (typeof v === 'string' ? new RegExp(v) : v));
 }
 
 /**
@@ -91,7 +93,7 @@ function makeRegexList(val) {
  * @return {Array} URL list
  */
 function makeUrlList(val) {
-    return makeList(val).filter(v => isUrl(v));
+    return makeList(val).filter((v) => isUrl(v));
 }
 
 /**
@@ -138,7 +140,7 @@ class Slideshow {
             author: config.author || 'Author',
             description: config.description || 'Slideshow description',
             language: config.language || 'en',
-            charset: config.charset || 'UTF-8',
+            charset: config.charset || 'UTF-8'
         };
         this.markdownFiles = makeVinylFileList(markdown);
         this.jsFiles = makeVinylFileList(js);
@@ -175,56 +177,58 @@ class Slideshow {
 
             // Prepare SCSS resources
             this.cssFiles.push(vinylFile.readSync(path.join(__dirname, 'src/scss/100-slideshow.scss')));
-            sass.render({
-                data: this.cssFiles.sort(sortVinylResources)
-                    .reduce((a, c) => `${a}${c.contents.toString()}`, ''),
-                includePaths: [path.join(__dirname, 'src/scss')],
-                outputStyle: 'compressed',
-            },
-            (error2, result1) => {
-                if (error2) {
-                    cb(error2);
-                    return;
+            sass.render(
+                {
+                    data: this.cssFiles.sort(sortVinylResources)
+                        .reduce((a, c) => `${a}${c.contents.toString()}`, ''),
+                    includePaths: [path.join(__dirname, 'src/scss')],
+                    outputStyle: 'compressed'
+                },
+                (error2, result1) => {
+                    if (error2) {
+                        cb(error2);
+                        return;
+                    }
+                    postcss([autoprefixer]).process(result1.css, { from: 'undefined' }).then((result2) => {
+                        result2.warnings().forEach((warn) => {
+                            console.warn(warn.toString());
+                        });
+                        data.css = result2.css;
+
+                        // Prepare the slides
+                        markdown.forEach((file, index) => {
+                            const slide = matter(file.contents);
+                            slide.data.id = slide.data.id || `slide-${index}`;
+                            slide.data.title = slide.data.title || slide.data.id;
+                            slide.data.isQuote = slide.data.type && (slide.data.type === 'quote');
+                            slide.data.quote = Object.assign({
+                                author: '',
+                                url: '',
+                                image: ''
+                            }, slide.data.quote);
+                            slide.data.align = slide.data.align || 'left';
+                            slide.data.valign = slide.data.valign || 'top';
+                            slide.data.gradient = ('gradient' in slide.data) ? !!slide.data.gradient : true;
+                            slide.data.css = slide.data.css || '';
+                            slide.data.steps = parseInt(slide.data.steps || '0', 10);
+                            slide.data.theme = slide.data.theme || '';
+                            slide.data.leave = slide.data.leave || '';
+                            slide.data.enter = slide.data.enter || '';
+                            const parts = slide.content.split('---\n');
+                            slide.content = marked.parse(parts.shift());
+                            if (parts.length) {
+                                slide.footer = marked.parse(parts.shift());
+                            }
+                            data.slides.push(slide);
+                        });
+
+                        // Templating
+                        const template = handlebars.compile(source);
+                        const html = template(data);
+                        cb(null, html);
+                    });
                 }
-                postcss([autoprefixer]).process(result1.css, { from: 'undefined' }).then((result2) => {
-                    result2.warnings().forEach((warn) => {
-                        console.warn(warn.toString());
-                    });
-                    data.css = result2.css;
-
-                    // Prepare the slides
-                    markdown.forEach((file, index) => {
-                        const slide = matter(file.contents);
-                        slide.data.id = slide.data.id || `slide-${index}`;
-                        slide.data.title = slide.data.title || slide.data.id;
-                        slide.data.isQuote = slide.data.type && (slide.data.type === 'quote');
-                        slide.data.quote = Object.assign({
-                            author: '',
-                            url: '',
-                            image: '',
-                        }, slide.data.quote || {});
-                        slide.data.align = slide.data.align || 'left';
-                        slide.data.valign = slide.data.valign || 'top';
-                        slide.data.gradient = ('gradient' in slide.data) ? !!slide.data.gradient : true;
-                        slide.data.css = slide.data.css || '';
-                        slide.data.steps = parseInt(slide.data.steps || '0', 0);
-                        slide.data.theme = slide.data.theme || '';
-                        slide.data.leave = slide.data.leave || '';
-                        slide.data.enter = slide.data.enter || '';
-                        const parts = slide.content.split('---\n');
-                        slide.content = marked(parts.shift());
-                        if (parts.length) {
-                            slide.footer = marked(parts.shift());
-                        }
-                        data.slides.push(slide);
-                    });
-
-                    // Templating
-                    const template = handlebars.compile(source);
-                    const html = template(data);
-                    cb(null, html);
-                });
-            });
+            );
         });
     }
 }
@@ -240,8 +244,8 @@ Slideshow.stream = function stream(config) {
         cssUrl: [],
         js: ['\\.js$'],
         jsUrl: [],
-        markdown: ['\\.md$'],
-    }, config || {});
+        markdown: ['\\.md$']
+    }, config);
     options.css = makeRegexList(options.css);
     options.js = makeRegexList(options.js);
 
@@ -303,7 +307,7 @@ Slideshow.stream = function stream(config) {
      * @param {Function} cb Callback
      */
     function endStream(cb) {
-        other.forEach(file => this.push(file));
+        other.forEach((file) => this.push(file));
 
         (new Slideshow(options, markdown, css, js)).compile((error, slides) => {
             if (error || !slides) {
@@ -315,7 +319,7 @@ Slideshow.stream = function stream(config) {
 
             this.push(new Vinyl({
                 contents: Buffer.from(slides),
-                path: 'slideshow.html',
+                path: 'slideshow.html'
             }));
 
             cb();

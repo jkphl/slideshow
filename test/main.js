@@ -1,12 +1,10 @@
 /* global describe it */
 
-'use strict';
-
 const should = require('should');
 const assert = require('stream-assert');
 const gulp = require('gulp');
-const Slideshow = require('..');
 const path = require('path');
+const Slideshow = require('..');
 
 const markdownFiles = path.join(__dirname, 'fixture/markdown/*.md');
 const scssFiles = path.join(__dirname, 'fixture/scss/*.scss');
@@ -45,8 +43,8 @@ describe('Slideshow().stream', () => {
     it('should pass through other resources', (done) => {
         gulp.src(path.join(__dirname, 'fixture/other/*'))
             .pipe(Slideshow.stream())
-            .pipe(assert.length(1))
-            .pipe(assert.nth(0, (d) => {
+            .pipe(assert.length(2))
+            .pipe(assert.nth(1, (d) => {
                 should(path.basename(d.path)).eql('test.txt');
             }))
             .pipe(assert.end(done));
