@@ -178,8 +178,8 @@ class Slideshow {
             this.jsFiles.push(vinylFile.readSync(path.join(__dirname, 'src/js/100-slideshow.js')));
             const js = this.jsFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
             data.js = UglifyJS.minify(js, { compress: false, mangle: false }).code;
-            data.intro = this.introFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
-            data.outro = this.outroFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
+            data.intro = this.introFiles.sort(sortVinylResources).reduce((a, c) => `${a}${c.contents.toString()}`, '');
+            data.outro = this.outroFiles.sort(sortVinylResources).reduce((a, c) => `${a}${c.contents.toString()}`, '');
 
             // Prepare SCSS resources
             this.cssFiles.push(vinylFile.readSync(path.join(__dirname, 'src/scss/100-slideshow.scss')));
@@ -260,6 +260,8 @@ Slideshow.stream = function stream(config) {
     const css = options.cssUrl;
     const markdown = [];
     const other = [];
+    const intro = [];
+    const outro = [];
 
     /**
      * Buffer incoming contents
@@ -303,6 +305,20 @@ Slideshow.stream = function stream(config) {
             }
         }
 
+        // Detect intro files
+        if (file.relative.match('\\.intro\\.[a-zA-Z0-9]+$')) {
+            intro.push(file);
+            cb();
+            return;
+        }
+
+        // Detect outro files
+        if (file.relative.match('\\.outro\\.[a-zA-Z0-9]+$')) {
+            outro.push(file);
+            cb();
+            return;
+        }
+
         other.push(file);
         cb();
     }
@@ -315,7 +331,7 @@ Slideshow.stream = function stream(config) {
     function endStream(cb) {
         other.forEach((file) => this.push(file));
 
-        (new Slideshow(options, markdown, css, js)).compile((error, slides) => {
+        (new Slideshow(options, markdown, css, js, intro, outro)).compile((error, slides) => {
             if (error || !slides) {
                 cb(error);
                 return;

@@ -8,6 +8,7 @@ const Slideshow = require('..');
 
 const markdownFiles = path.join(__dirname, 'fixture/markdown/*.md');
 const scssFiles = path.join(__dirname, 'fixture/scss/*.scss');
+const introFiles = path.join(__dirname, 'fixture/other/*.svg');
 
 /**
  * Scan a directory and return the contained files
@@ -51,7 +52,7 @@ describe('Slideshow().stream', () => {
     });
 
     it('should create slideshow', (done) => {
-        gulp.src([markdownFiles, scssFiles])
+        gulp.src([markdownFiles, scssFiles, introFiles])
             .pipe(Slideshow.stream())
             .pipe(assert.length(1))
             .pipe(gulp.dest('./tmp'))
