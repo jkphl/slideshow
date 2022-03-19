@@ -133,8 +133,10 @@ class Slideshow {
      * @param {File|Array.<File>|Object.<String, File>} markdown Markdown slides
      * @param {File|Array.<File>|Object.<String, File>} css Custom CSS resources
      * @param {File|Array.<File>|Object.<String, File>} js Custom JavaScript resources
+     * @param {File|Array.<File>|Object.<String, File>} intro Custom intro resources
+     * @param {File|Array.<File>|Object.<String, File>} outro Custom outro resources
      */
-    constructor(config, markdown, css, js) {
+    constructor(config, markdown, css, js, intro, outro) {
         this.config = {
             title: config.title || 'Slideshow title',
             author: config.author || 'Author',
@@ -147,6 +149,8 @@ class Slideshow {
         this.jsUrls = makeUrlList(js);
         this.cssFiles = makeVinylFileList(css);
         this.cssUrls = makeUrlList(css);
+        this.introFiles = makeVinylFileList(intro);
+        this.outroFiles = makeVinylFileList(outro);
     }
 
     /**
@@ -174,6 +178,8 @@ class Slideshow {
             this.jsFiles.push(vinylFile.readSync(path.join(__dirname, 'src/js/100-slideshow.js')));
             const js = this.jsFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
             data.js = UglifyJS.minify(js, { compress: false, mangle: false }).code;
+            data.intro = this.introFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
+            data.outro = this.outroFiles.sort(sortVinylResources).reduce((a, c) => `${a};${c.contents.toString()}`, '');
 
             // Prepare SCSS resources
             this.cssFiles.push(vinylFile.readSync(path.join(__dirname, 'src/scss/100-slideshow.scss')));
